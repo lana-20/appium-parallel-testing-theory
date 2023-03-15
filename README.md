@@ -3,15 +3,14 @@
 
 It's important to be able to run multiple tests at once. Eventually your testsuite will grow large enough that waiting for them to complete one by one just doesn't make sense. But running tests in parallel comes with a number of complications. Let's talk about everything that you'll need in order to successfully start running your testsuite in parallel.
 
-Requirements for Parallel Testing
-Test runner that can run multiple tests at the same time. Pytest can do this through the use of a
-plugin called pytest-xdist
-Multiple test browsers or devices (at least one per parallel execution thread). Can be tricky to scale
-easily especially with mobile; cloud services help with this problem.
-(Maybe) multiple webdriver servers. E.g., one Geckodriver instance per parallel execution thread.
-Partitioning of system resources required for a test. E.g., each Android session requires the exclusive
-use of a system port, so simultaneous sessions need to be configured not to use the same port.
-Ensure total independence of tests (tests cannot assume state from any other tests)
+
+Requirements for Parallel Testing |
+---- |
+Test runner that can run multiple tests at the same time. Pytest can do this through the use of a plugin called <code>pytest-xdist</code> |
+Multiple test browsers or devices (at least one per parallel execution thread). Can be tricky to scale easily especially with mobile; cloud services help with this problem. |
+(Maybe) multiple webdriver servers. E.g., one Geckodriver instance per parallel execution thread. |
+Partitioning of system resources required for a test. E.g., each Android session requires the exclusive use of a system port, so simultaneous sessions need to be configured not to use the same port. |
+Ensure total independence of tests (tests cannot assume state from any other tests) |
 
 1. The first thing you need to run your tests in parallel is a test runner that can run multiple tests at the same time. If your test runner can't run multiple tests at the same time, you're kind of dead in the water. And unfortunately, there are some common test runners out there that don't have this ability, so if you end up using one of those, you'll have to do some pretty intense gymnastics to figure out how to break your testsuite up into different processes. But luckily for us, Pytest's test runner can parallelize tests within a suite no problem, through the use of a special plugin called pytest-xdist.
 2. The second thing you need is a number of test devices, or browsers. If you want to run 5 tests at a time in your iOS test suite, you need 5 iOS devices or simulators that can be independently used. Mobile devices pose the biggest challenge here, primarily because it's more computationally and financially expensive to run a mobile device than a web browser. Also, it's quite easy to run a number of different instances of the same browser on your system, but interacting with a number of identically-configured iOS or Android devices involves knowing some unique information about each of them, like an ID. This creates complexity in our test code, as we'll see. This is the area where a device or browser cloud can make life a lot easier. With a device or browser cloud, you don't have to figure out how to provision and maintain each browser or device. Instead, you just use capabilities to request devices that make sense, and as long as your account has access to them, you're good!
