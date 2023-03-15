@@ -1,5 +1,6 @@
 # Running Appium Tests in Parallel in Theory
 
+*When your test suite grows to include a large number of tests, target platforms and devices, it's no longer feasible to run them one at a time. Learn how to run multiple tests at once to speed up your build.*
 
 It's important to be able to run multiple tests at once. Eventually your testsuite will grow large enough that waiting for them to complete one by one just doesn't make sense. But running tests in parallel comes with a number of complications. Let's talk about everything that you'll need in order to successfully start running your testsuite in parallel.
 
