@@ -42,6 +42,12 @@ The other thing we need to do is make sure that the internal ports used by Appiu
 
 First we run one Appium server on port 4700, and give it a set of default capabilities that causes <code>wdaLocalPort</code> to be 8100, and <code>systemPort</code> to be 8200. Now we can run another Appium server in another terminal window, on port 4701, with a wdaLocalPort of 8101 and a systemPort of 8201. We could keep adding running servers in this way, making sure that none of these ports will clash across server instances. Now, in our actual test code capabilities, we don't have to think about <code>wdaLocalPort</code> or <code>systemPort</code>. We just have to ensure that each parallel test targets a different Appium server, and the server will already be configured with its own unique internal ports! And we'll talk about how to make this happen with Pytest in a bit. But it's worth pointing again before we do that, if we use a cloud service for our Appium hosts and devices, we don't have to worry about running Appium servers ourselves, or any of these port conflicts, because that is all managed by the service itself.
 
+Requirements for Parallel Testing with Pytest |
+---- |
+Install the necessary plugin: <code>pip install pytest-xdist</code> |
+When you run your suite, include the number of parallel execution threads with the <code>-n</code> option:   <code>pytest-n 5</code> |
+
+
 Let's talk about how to make our Pytest suite run in parallel. This is managed with a Pytest plugin called <code>pytest-xdist</code>. To make this plugin available, we just need to install it via <code>pip</code> (or <code>pip3</code> if that's the command you use on your system), the way we install all our Python packages:
 
     pip install pytest-xdist
@@ -51,6 +57,26 @@ So go ahead and run this command now in the same Python environment you've been 
     pytest -n 5
 
 That number is the number of tests that will be run in parallel. It's pretty simple! But how does it work? Getting into all of those details would be unnecessary complexity, but it is important to know that whenever we tell Pytest-xdist to run with a certain number of parallel tests, it will provision a series of what are known as workers to handle each parallel thread. Pytest-xdist takes care of finding all the tests and deciding which tests go to which workers; we don't need to worry about any of that. But we *do* need to make sure that different Pytest workers are not trying to use the same devices, or the same servers, if we have a model where each server can only run one test at a time.
+
+#### Illustration: Testing in Parallel
+
+<img width="800" src="https://user-images.githubusercontent.com/70295997/225182239-bd543a74-95c3-41d2-b79e-1bbeaf0394f9.png">
+
+We can think about the problem this way. Imagine we have a party with a bunch of people at it, and we need to cook them all a lot of food. We could hire one chef to cook it all using one pot and one stove burner, recipe after recipe, but this would take a long time.
+
+It would be much more efficient if we had a bunch of chefs and a bunch of stove burners, each with its pot. In an ideal scenario, we can imagine that each chef would come to a box of recipes that need to be prepared, take a recipe, and head to a stove burner to cook that recipe. When that chef is done, they can come back, pick up another recipe, and head to another free burner to cook that next recipe. And on and on until all the recipes are finished.
+
+#### Illustration: Pytest-Xdist
+
+<img width="800" src="https://user-images.githubusercontent.com/70295997/225182549-4eab783e-d51c-41dc-a321-f77219c11271.png">
+
+What Pytest-xdist does is take care of hiring as many chefs as we tell it to, and handing a recipe to each chef whenever that chef needs another job. But it's our job to tell each chef which stovetop burner is OK to use. Unraveling the analogy here, each chef is a Pytest worker, in other words a Python process that is ready to run one of our testcases all by itself. And each recipe is a testcase that we need to execute. Finally, the stovetop burner and pot correspond to an Appium or Selenium server and its connected device or browser. So we're responsible for coming up with the recipes, or testcases, and making sure we have enough stovetops and pots, or WebDriver servers and devices. Pytest will take care of the rest. Well, mostly. Pytest doesn't know anything about WebDriver servers or devices. So it wouldn't know how to tell each chef which stovetop to take their recipe to. And we could imagine lots of kinds of problems if the chefs don't do it right! Two chefs could each try to go to the same stovetop and make a different recipe at the same time in the same place, leading to disaster! Or we could have more chefs than stovetops, leaving some chefs sitting and doing nothing. We need to make sure there's one stovetop for each chef, and that each chef has a dedicated stovetop that it always returns to, so the different chefs aren't stepping on each other's toes.
+
+Let's talk conceptually about how we might do this in our framework. The key will be that we can detect, for any given run of a testcase, which Pytest worker will be running that testcase. Each Pytest worker will have its own special ID. So we can set up a system in our <code>conftest.py</code>, where we make sure that a given Pytest worker with a given ID will always get the same WebDriver environment. If we do that, we guarantee that different workers won't clash with one another. We can also make sure that we haven't tried to use more workers than we have environments for them to work with, by checking if there are no free environments for a given worker. If that's the case, we can fail the test suite right away and avoid any potentially odd behavior.
+
+That's it for the theory behind how we're going to get multiple tests running at a time. 
+
+
 
 
 
